@@ -280,10 +280,13 @@ class BIDSPath:
     extension : str | None
         The extension of the filename. E.g., ``'.json'``.
     datatype : str
-        The BIDS data type, e.g., ``'anat'``, ``'func'``, ``'eeg'``, ``'meg'``,
-        ``'ieeg'``.
-    root : path-like | None
-        The root directory of the BIDS dataset.
+        The "data type" of folder being created at the end of the folder
+        hierarchy. E.g., ``'anat'``, ``'func'``, ``'eeg'``, ``'meg'``,
+        ``'ieeg'``, etc.
+    root : str | pathlib.Path
+        The root for the filename to be created. E.g., a path to the folder
+        in which you wish to create a file with this name.
+        Defaults to ``'.'``.
     check : bool
         If ``True``, enforces BIDS conformity. Defaults to ``True``.
 
@@ -385,7 +388,7 @@ class BIDSPath:
         space=None,
         split=None,
         description=None,
-        root=None,
+        root='.',
         suffix=None,
         extension=None,
         datatype=None,
@@ -858,6 +861,8 @@ class BIDSPath:
         # get the inner-most BIDS directory for this file path
         data_path = self.directory
 
+        assert self.root is not None
+
         # account for MEG data that are directory-based
         # else, all other file paths attempt to match
         if self.suffix == "meg" and self.extension == ".ds":
@@ -868,56 +873,41 @@ class BIDSPath:
             # if suffix and/or extension is missing, and root is
             # not None, then BIDSPath will infer the dataset
             # else, return the relative path with the basename
-            if (
-                self.suffix is None or self.extension is None
-            ) and self.root is not None:
-                # get matching BIDSPaths inside the bids root
-                matching_paths = _get_matching_bidspaths_from_filesystem(self)
 
-                # FIXME This will break
-                # FIXME e.g. with FIFF data split across multiple files.
-                # if extension is not specified and no unique file path
-                # return filepath of the actual dataset for MEG/EEG/iEEG data
-                if self.suffix is None or self.suffix in ALLOWED_DATATYPES:
-                    # now only use valid datatype extension
-                    if self.extension is None:
-                        valid_exts = sum(ALLOWED_DATATYPE_EXTENSIONS.values(), [])
-                    else:
-                        valid_exts = [self.extension]
-                    matching_paths = [
-                        p for p in matching_paths if _parse_ext(p)[1] in valid_exts
-                    ]
+            # get matching BIDS paths inside the bids root
+            matching_paths = \
+                _get_matching_bidspaths_from_filesystem(self)
 
-                if self.split is None and (
-                    not matching_paths or "_split-" in matching_paths[0]
-                ):
-                    # try finding FIF split files (only first one)
-                    this_self = self.copy().update(split="01")
-                    matching_paths = _get_matching_bidspaths_from_filesystem(this_self)
+            # FIXME This will break
+            # FIXME e.g. with FIFF data split across multiple files.
+            # if extension is not specified and no unique file path
+            # return filepath of the actual dataset for MEG/EEG/iEEG data
+            if self.suffix is None or self.suffix in ALLOWED_DATATYPES:
+                # now only use valid datatype extension
+                valid_exts = sum(ALLOWED_DATATYPE_EXTENSIONS.values(), [])
+                matching_paths = [p for p in matching_paths
+                                  if _parse_ext(p)[1] in valid_exts]
 
-                # found no matching paths
-                if not matching_paths:
-                    bids_fpath = op.join(data_path, self.basename)
-                # if paths still cannot be resolved, then there is an error
-                elif len(matching_paths) > 1:
-                    matching_paths_str = "\n".join(sorted(matching_paths))
-                    msg = (
-                        "Found more than one matching data file for the "
-                        "requested recording. While searching:\n"
-                        f"{indent(repr(self), '    ')}\n"
-                        f"Found {len(matching_paths)} paths:\n"
-                        f"{indent(matching_paths_str, '    ')}\n"
-                        "Cannot proceed due to the "
-                        "ambiguity. This is likely a problem with your "
-                        "BIDS dataset. Please run the BIDS validator on "
-                        "your data."
-                    )
-                    raise RuntimeError(msg)
-                else:
-                    bids_fpath = matching_paths[0]
+            if (self.split is None and self.suffix is None and
+                    self.extension is None and
+                    (not matching_paths or
+                     '_split-' in matching_paths[0])):
+                # try finding FIF split files (only first one)
+                this_self = self.copy().update(split='01')
+                matching_paths = \
+                    _get_matching_bidspaths_from_filesystem(this_self)
 
-            else:
+            if not matching_paths:  # found no matching paths
                 bids_fpath = op.join(data_path, self.basename)
+            elif len(matching_paths) > 1:
+                msg = ('Found more than one matching data file for the '
+                       'requested recording. Cannot proceed due to the '
+                       'ambiguity. This is likely a problem with your '
+                       'BIDS dataset. Please run the BIDS validator on '
+                       'your data.')
+                raise RuntimeError(msg)
+            else:
+                bids_fpath = matching_paths[0]
 
         bids_fpath = Path(bids_fpath)
         return bids_fpath
