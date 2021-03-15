@@ -670,6 +670,7 @@ def test_bids_path_inference(return_bids_test_dir):
     )
     with pytest.raises(RuntimeError, match="Found more than one"):
         bids_path.fpath
+    assert bids_path.fpath == f'{bids_root}/sub-{subject_id}/ses-{session_id}/sub-{subject_id}_ses-{session_id}_task-{task}_acq-{acq}'
 
     # shouldn't error out when there is no uncertainty
     channels_fname = BIDSPath(
