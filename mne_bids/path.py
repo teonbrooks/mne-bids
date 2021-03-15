@@ -286,7 +286,7 @@ class BIDSPath:
     root : str | pathlib.Path
         The root for the filename to be created. E.g., a path to the folder
         in which you wish to create a file with this name.
-        Defaults to ``'.'``.
+        Defaults to ``'.'``, i.e. the current working directory.
     check : bool
         If ``True``, enforces BIDS conformity. Defaults to ``True``.
 
