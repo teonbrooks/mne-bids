@@ -977,8 +977,8 @@ def test_make_filenames():
     with pytest.raises(ValueError):
         BIDSPath(subject="one-two", suffix="ieeg", extension=".edf")
 
-    with pytest.raises(ValueError, match="At least one"):
-        BIDSPath()
+    with pytest.raises(ValueError, match='At least one'):
+        BIDSPath(root=None)
 
     # emptyroom check: invalid task
     with pytest.raises(ValueError, match="task must be"):
