@@ -656,7 +656,10 @@ def test_find_matching_sidecar(return_bids_test_dir, tmp_path):
 
 @testing.requires_testing_data
 def test_bids_path_inference(return_bids_test_dir):
-    """Test usage of BIDSPath object and fpath."""
+    """Test usage of BIDSPath object and fpath.
+
+    BIDSPath.fpath will not infer the file path in v0.7+
+    """
     bids_root = return_bids_test_dir
 
     # without providing all the entities, ambiguous when trying
@@ -705,6 +708,9 @@ def test_bids_path_inference(return_bids_test_dir):
     assert str(channels_fname.fpath) == extra_file
     # set state back to original
     shutil.rmtree(Path(extra_file).parent)
+
+    expected_fpath = f'{bids_root}/sub-{subject_id}/ses-{session_id}/sub-{subject_id}_ses-{session_id}_task-{task}'  # noqa
+    assert bids_path.fpath.as_posix() == expected_fpath
 
 
 @testing.requires_testing_data
