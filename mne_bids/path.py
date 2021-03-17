@@ -861,7 +861,7 @@ class BIDSPath:
         # get the inner-most BIDS directory for this file path
         data_path = self.directory
 
-        assert self.root is not None
+        _validate_type(self.root, types=['str', 'path-like'])
 
         # account for MEG data that are directory-based
         # else, all other file paths attempt to match
