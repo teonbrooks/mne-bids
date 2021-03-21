@@ -53,8 +53,18 @@ def _find_empty_room_candidates(bids_path):
 
     bids_path = bids_path.copy()
 
-    datatype = "meg"  # We're only concerned about MEG data here
-    bids_fname = bids_path.update(suffix=datatype).fpath
+    # emptyroom is only for MEG
+    datatype = 'meg'
+    bids_path.update(suffix=datatype, datatype=datatype)
+    bids_fname = bids_path.fpath
+
+    if not bids_fname.exists():
+        raise RuntimeError(
+            f'BIDS path {bids_fname} does not exist, or '
+            f'is not a fully specified file path. To find '
+            f'emptyroom recordings, please fully specify '
+            f'(e.g. suffix and extension).')
+
     _, ext = _parse_ext(bids_fname)
     # Create a path for the empty-room directory to be used for matching.
     emptyroom_dir = BIDSPath(root=bids_root, subject="emptyroom").directory
@@ -172,7 +182,13 @@ def _find_matched_empty_room(bids_path):
     for er_bids_path in candidates:
         # get entities from filenamme
         er_meas_date = None
+        params.pop('subject')  # er subject entity is different
 
+        # er file is assumed to have the same extension as the
+        # original BIDS path passed in
+        er_bids_path = BIDSPath(subject='emptyroom', **params, datatype='meg',
+                                root=bids_root, extension=ext,
+                                check=False)
         # Try to extract date from filename.
         if er_bids_path.session is not None:
             try:

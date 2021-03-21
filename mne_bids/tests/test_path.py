@@ -1460,7 +1460,14 @@ def test_find_emptyroom_ties(tmp_path):
     er_raw.save(op.join(er_dir, f"{er_basename_1}_meg.fif"))
     er_raw.save(op.join(er_dir, f"{er_basename_2}_meg.fif"))
 
-    with pytest.warns(RuntimeWarning, match="Found more than one"):
+    with pytest.raises(RuntimeError, match='BIDS path .* does not '
+                                           'exist'):
+        bids_path.find_empty_room()
+
+    # now add fully specified BIDS entities to find matching empty
+    # room recordings, but show a warning if there are multiple matches
+    bids_path.update(suffix='meg', extension='.fif')
+    with pytest.warns(RuntimeWarning, match='Found more than one'):
         bids_path.find_empty_room()
 
 
@@ -1499,12 +1506,9 @@ def test_find_emptyroom_no_meas_date(tmp_path):
     write_raw_bids(raw, bids_path, overwrite=True)
     os.remove(op.join(bids_root, "participants.tsv"))
 
-    with (
-        pytest.warns(RuntimeWarning, match="Could not retrieve .* date"),
-        pytest.warns(RuntimeWarning, match="participants.tsv file not found"),
-        pytest.warns(RuntimeWarning, match=r"Did not find any channels\.tsv"),
-        pytest.warns(RuntimeWarning, match=r"Did not find any meg\.json"),
-    ):
+    # update extension to the actual dataset
+    bids_path.update(extension='.fif')
+    with pytest.warns(RuntimeWarning, match='Could not retrieve .* date'):
         bids_path.find_empty_room()
 
 
